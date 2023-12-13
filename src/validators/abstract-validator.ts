@@ -7,7 +7,11 @@ export abstract class AbstractValidator {
     constructor() {
     }
 
-    abstract shouldTrigger(input: string): boolean
+    getTextFromPost(op: RepoOp){
+        return op.payload.text;
+    }
+
+    abstract shouldTrigger(op: RepoOp): boolean
 
 }
 
@@ -21,8 +25,8 @@ export class SimpleFunctionValidator extends AbstractValidator {
         super()
     }
 
-    shouldTrigger(input: string): boolean {
-        return this.triggerValidator(input)
+    shouldTrigger(op: RepoOp): boolean {
+        return this.triggerValidator(op)
     }
 
 }
@@ -36,10 +40,10 @@ export class OrValidator extends AbstractValidator{
         super();
     }
 
-    shouldTrigger(input: string): boolean {
+    shouldTrigger(op: RepoOp): boolean {
         let willTrigger = false;
         this.validators.forEach((validator) => {
-            if(validator.shouldTrigger(input)){
+            if(validator.shouldTrigger(op)){
                 willTrigger = true;
             }
         })

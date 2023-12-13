@@ -3,6 +3,7 @@ import {RepoOp} from "@atproto/api/dist/client/types/com/atproto/sync/subscribeR
 import {PostDetails} from "../utils/types.ts";
 import {AbstractValidator} from "../validators/abstract-validator.ts";
 import {AbstractTriggerAction} from "../actions/abstract-trigger-action.ts";
+import {getPosterDID} from "../utils/post-details-utils.ts";
 
 abstract class PayloadHandler {
     protected agentDid;
@@ -16,10 +17,10 @@ abstract class PayloadHandler {
         this.agentDid = agent.session?.did
     }
 
-    shouldTrigger(input: string): boolean {
+    shouldTrigger(op: RepoOp): boolean {
         let willTrigger = true;
         this.triggerValidators.forEach((validator) => {
-            let response = validator.shouldTrigger(input)
+            let response = validator.shouldTrigger(op)
             if (!response) {
                 willTrigger = false
             }
@@ -27,10 +28,10 @@ abstract class PayloadHandler {
         return willTrigger;
     }
 
-    runActions(op: RepoOp, postDetails: PostDetails){
-        this.triggerActions.forEach((action) => {
-            action.handle(this.agent, op, postDetails)
-        })
+    async runActions(op: RepoOp, postDetails: PostDetails) {
+        for (const action of this.triggerActions) {
+            await action.handle(this.agent, op, postDetails)
+        }
     }
 
     abstract async handle(op: RepoOp, repo: string): Promise<void>;
@@ -51,12 +52,12 @@ export class PostHandler extends PayloadHandler {
     }
 
     postedByUser(postDetails: PostDetails) {
-        let postDid = postDetails.uri.split('/')[2];
+        let postDid = getPosterDID(postDetails);
         return postDid === this.agentDid
     }
 
     postedByFollower(postDetails: PostDetails) {
-        let userPosterDID = (postDetails.uri.match(/did:[^\/]*/) || [])[0]
+        let userPosterDID = getPosterDID(postDetails)
         if(!userPosterDID){
             return false;
         }
@@ -71,7 +72,7 @@ export class PostHandler extends PayloadHandler {
     }
 
     async handle(op: RepoOp, repo: string): Promise<void> {
-        if (this.shouldTrigger(op.payload.text)) {
+        if (this.shouldTrigger(op)) {
             try {
                 let postDetails = await this.getPostDetails(op, repo);
                 if (!this.postedByUser(postDetails)) {
@@ -95,7 +96,6 @@ export class HandlerController {
     constructor(private agent: BskyAgent, private handlers: Array<PayloadHandler>) {
         this.refreshFollowers()
     }
-
     refreshFollowers(){
         if (this.agent.session?.did) {
             this.agent.getFollowers({actor: this.agent.session.did}, {}).then((resp) => {

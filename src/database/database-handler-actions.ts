@@ -2,10 +2,8 @@ import {BskyAgent} from "@atproto/api";
 import {RepoOp} from "@atproto/api/dist/client/types/com/atproto/sync/subscribeRepos";
 import {PostDetails} from "../utils/types.ts";
 import {AbstractTriggerAction} from "../actions/abstract-trigger-action.ts";
-import {convertTextToDate} from "../utils/text-utils.ts";
-import {ReplyWithInputAction} from "../actions/reply-actions.ts";
-import { format } from "date-fns";
 import {Post} from "./database-connection.ts";
+import {getPosterDID} from "../utils/post-details-utils.ts";
 
 export class InsertPostInToDatabase extends AbstractTriggerAction{
 
@@ -14,6 +12,7 @@ export class InsertPostInToDatabase extends AbstractTriggerAction{
         await Post.create({
             cid: postDetails.cid,
             uri: postDetails.uri,
+            did: getPosterDID(postDetails),
             postDetails: postDetails
         })
         // reply to post based on reminder timing
