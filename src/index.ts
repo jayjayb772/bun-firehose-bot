@@ -140,7 +140,8 @@ function setFirehoseListener(firehoseClient: XrpcEventStreamClient) {
     })
 }
 
-let inter  = 1000
+let interval  = 1000
+let MAX_TIME_BETWEEN = 100
 setInterval(async function () {
     console.log("Checking if firehose is connected")
     let currentTime = Date.now();
@@ -153,4 +154,4 @@ setInterval(async function () {
         setFirehoseListener(firehoseClient)
     }
 
-}, 60 * inter)
+}, 60 * interval)
