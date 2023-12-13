@@ -1,4 +1,4 @@
-import {AppBskyFeedPost, AtpSessionData, AtpSessionEvent, BskyAgent} from "@atproto/api";
+import {AppBskyFeedPost} from "@atproto/api";
 import {
     ComAtprotoSyncSubscribeRepos,
     subscribeRepos,
@@ -10,11 +10,9 @@ import {HandlerController} from "./handlers/abstract-handler.ts";
 import {WellActuallyHandler} from "./handlers/well-actually/well-actually-handler.ts";
 import {SixtyNineHandler} from "./handlers/sixty-nine/sixty-nine-handler.ts";
 import {BeeMovieScriptHandler} from "./handlers/bee-movie/bee-movie-script-handler.ts";
-import {Op} from "sequelize";
 import {Post, sequelize} from "./database/database-connection.ts";
 import {DatabaseExampleHandler} from "./handlers/database-example/database-example-handler.ts";
-import {AgentDetails, PostDetails} from "./utils/types.ts";
-import {replyToPost} from "./utils/agent-post-functions.ts";
+import {AgentDetails} from "./utils/types.ts";
 import {authenticateAgent, createAgent} from "./utils/agent-utils.ts";
 import {TestHandler} from "./handlers/test-handler/test-handler.ts";
 
@@ -65,9 +63,9 @@ async function initialize() {
     }
 
     replyBotAgentDetails = await authenticateAgent(replyBotAgentDetails)
-    if(!replyBotAgentDetails.agent){
+    if (!replyBotAgentDetails.agent) {
         throw new Error(`Could not get agent from ${replyBotAgentDetails.name}`)
-    }else{
+    } else {
         postOnlyHandlerController = new HandlerController(replyBotAgentDetails.agent, [])
 
         replyOnlyHandlerController = new HandlerController(replyBotAgentDetails.agent, [
@@ -83,9 +81,9 @@ async function initialize() {
     // Here is where we're initializing the handler functions
 
     devBotAgentDetails = await authenticateAgent(devBotAgentDetails)
-    if(!devBotAgentDetails.agent){
+    if (!devBotAgentDetails.agent) {
         throw new Error(`Could not get agent from ${devBotAgentDetails.name}`)
-    }else{
+    } else {
         testingHandlerController = new HandlerController(devBotAgentDetails.agent, [
             TestHandler,
             DatabaseExampleHandler
@@ -97,10 +95,10 @@ async function initialize() {
     console.log("Initialized!")
 }
 
-try{
+try {
     await initialize();
-}catch (e) {
-    setTimeout(async function(){
+} catch (e) {
+    setTimeout(async function () {
         await initialize()
     }, 30000)
 }
@@ -132,7 +130,7 @@ function setFirehoseListener(firehoseClient: XrpcEventStreamClient) {
                             }
                             allPostsHandlerController.handle(op, repo)
 
-                             testingHandlerController.handle(op, repo)
+                            testingHandlerController.handle(op, repo)
                         }
                 }
             })
@@ -140,14 +138,14 @@ function setFirehoseListener(firehoseClient: XrpcEventStreamClient) {
     })
 }
 
-let interval  = 1000
+let interval = 1000
 let MAX_TIME_BETWEEN = 100
 setInterval(async function () {
     console.log("Checking if firehose is connected")
     let currentTime = Date.now();
     let diff = currentTime - lastMessage;
     console.log(`Time since last received message: ${diff}`)
-    if(diff > MAX_TIME_BETWEEN){
+    if (diff > MAX_TIME_BETWEEN) {
         console.log('Restarting subscription')
         firehoseClient.removeAllListeners();
         firehoseClient = subscribeRepos(`wss://bsky.network`, {decodeRepoOps: true})

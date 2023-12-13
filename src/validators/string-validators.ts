@@ -1,25 +1,28 @@
 import {AbstractValidator} from "./abstract-validator.ts";
 import {flattenTextUpdated} from "../utils/text-utils.ts";
-import {RepoOp} from "@atproto/api/dist/client/types/com/atproto/sync/subscribeRepos";
+import {ValidatorInput} from "../utils/types.ts";
 
 
-export class InputIsCommandValidator extends AbstractValidator{
+export class InputIsCommandValidator extends AbstractValidator {
     constructor(private triggerKey: string) {
         super();
     }
-    shouldTrigger(op: RepoOp): boolean {
-        let input = this.getTextFromPost(op)
+
+    async shouldTrigger(validatorInput: ValidatorInput): Promise<boolean> {
+        let input = this.getTextFromPost(validatorInput.op)
         return input.startsWith(`!${this.triggerKey}`) || input.startsWith(`${this.triggerKey}!`)
     }
 
 }
-export class InputStartsWithValidator extends AbstractValidator{
+
+export class InputStartsWithValidator extends AbstractValidator {
     constructor(private triggerKey: string, private strict: boolean = false) {
         super();
     }
-    shouldTrigger(op: RepoOp): boolean {
-        let input = this.getTextFromPost(op)
-        if(this.strict){
+
+    async shouldTrigger(validatorInput: ValidatorInput): Promise<boolean> {
+        let input = this.getTextFromPost(validatorInput.op)
+        if (this.strict) {
             return input.startsWith(this.triggerKey)
         }
         const flatText = flattenTextUpdated(this.triggerKey, input)
@@ -28,24 +31,26 @@ export class InputStartsWithValidator extends AbstractValidator{
 
 }
 
-export class InputContainsValidator extends AbstractValidator{
+export class InputContainsValidator extends AbstractValidator {
     constructor(private triggerKey: string) {
         super();
     }
-    shouldTrigger(op: RepoOp): boolean {
-        let input = this.getTextFromPost(op)
+
+    async shouldTrigger(validatorInput: ValidatorInput): Promise<boolean> {
+        let input = this.getTextFromPost(validatorInput.op)
 
         const flatText = flattenTextUpdated(this.triggerKey, input)
         return flatText.includes(this.triggerKey);
     }
 }
 
-export class InputEqualsValidator extends AbstractValidator{
+export class InputEqualsValidator extends AbstractValidator {
     constructor(private triggerKey: string) {
         super();
     }
-    shouldTrigger(op: RepoOp): boolean {
-        let input = this.getTextFromPost(op)
+
+    async shouldTrigger(validatorInput: ValidatorInput): Promise<boolean> {
+        let input = this.getTextFromPost(validatorInput.op)
 
         return input === this.triggerKey;
     }

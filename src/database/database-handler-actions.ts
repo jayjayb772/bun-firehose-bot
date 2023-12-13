@@ -5,7 +5,7 @@ import {AbstractTriggerAction} from "../actions/abstract-trigger-action.ts";
 import {Post} from "./database-connection.ts";
 import {getPosterDID} from "../utils/post-details-utils.ts";
 
-export class InsertPostInToDatabase extends AbstractTriggerAction{
+export class InsertPostInToDatabase extends AbstractTriggerAction {
 
     async handle(agent: BskyAgent, op: RepoOp, postDetails: PostDetails): Promise<any> {
         // Save post to database

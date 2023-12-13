@@ -1,9 +1,10 @@
 import {BskyAgent} from "@atproto/api";
 import {RepoOp} from "@atproto/api/dist/client/types/com/atproto/sync/subscribeRepos";
-import {PostDetails} from "../utils/types.ts";
+import {PostDetails, ValidatorInput} from "../utils/types.ts";
 import {AbstractValidator} from "../validators/abstract-validator.ts";
 import {AbstractTriggerAction} from "../actions/abstract-trigger-action.ts";
 import {getPosterDID} from "../utils/post-details-utils.ts";
+import {getPostDetails} from "../utils/agent-post-functions.ts";
 
 abstract class PayloadHandler {
     protected agentDid;
@@ -17,14 +18,14 @@ abstract class PayloadHandler {
         this.agentDid = agent.session?.did
     }
 
-    shouldTrigger(op: RepoOp): boolean {
+    async shouldTrigger(validatorInput: ValidatorInput): Promise<boolean> {
         let willTrigger = true;
-        this.triggerValidators.forEach((validator) => {
-            let response = validator.shouldTrigger(op)
+        for (const validator of this.triggerValidators) {
+            let response = await validator.shouldTrigger(validatorInput)
             if (!response) {
                 willTrigger = false
             }
-        })
+        }
         return willTrigger;
     }
 
@@ -58,30 +59,29 @@ export class PostHandler extends PayloadHandler {
 
     postedByFollower(postDetails: PostDetails) {
         let userPosterDID = getPosterDID(postDetails)
-        if(!userPosterDID){
+        if (!userPosterDID) {
             return false;
         }
         return this.FOLLOWERS.includes(userPosterDID);
     }
 
-    async getPostDetails(op: RepoOp, repo: string): Promise<PostDetails> {
-        let rkey = op.path.split('/')[1]
-        return await this.agent.getPost({
-            repo: repo, rkey: rkey
-        });
-    }
-
     async handle(op: RepoOp, repo: string): Promise<void> {
-        if (this.shouldTrigger(op)) {
+        let validatorData: ValidatorInput = {
+            op: op,
+            repo: repo,
+            agent: this.agent
+        }
+        let shouldTrigger = await this.shouldTrigger(validatorData);
+        if (shouldTrigger) {
             try {
-                let postDetails = await this.getPostDetails(op, repo);
+                let postDetails = await getPostDetails(this.agent, op, repo);
                 if (!this.postedByUser(postDetails)) {
                     if (this.requireFollowing) {
                         if (this.postedByFollower(postDetails)) {
-                            this.runActions(op, postDetails)
+                            await this.runActions(op, postDetails)
                         }
                     } else {
-                        this.runActions(op, postDetails)
+                        await this.runActions(op, postDetails)
                     }
                 }
             } catch (exception) {
@@ -96,7 +96,8 @@ export class HandlerController {
     constructor(private agent: BskyAgent, private handlers: Array<PayloadHandler>) {
         this.refreshFollowers()
     }
-    refreshFollowers(){
+
+    refreshFollowers() {
         if (this.agent.session?.did) {
             this.agent.getFollowers({actor: this.agent.session.did}, {}).then((resp) => {
                 let followers = resp.data.followers.map(profile => profile.did);
