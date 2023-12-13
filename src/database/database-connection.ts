@@ -22,14 +22,6 @@ export const Post = sequelize.define('Post', {
     postDetails:{
       type: DataTypes.JSON,
       allowNull: false
-    },
-    reminderDate: {
-        type: DataTypes.DATE,
-        allowNull: false
-    },
-    repliedAt:{
-        type: DataTypes.DATE,
-        allowNull: true
     }
 }, {
     // Other model options go here
